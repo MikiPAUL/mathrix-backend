@@ -15,7 +15,7 @@ exports.login = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body
 
-    const user = await prisma.user.findUnique({ where: { userName: username } })
+    const user = await prisma.user.findUnique({ where: { userName: username }, select: { id: true, name: true, userName: true, password: true, role: true } })
 
     if (!user) {
       return res.status(400).json({
@@ -59,6 +59,12 @@ exports.register = async (req: Request, res: Response) => {
         password: hashedPassword,
         email,
         phoneNumber
+      },
+      select: {
+        id: true,
+        userName: true,
+        email: true,
+        role: true
       }
     })
 
