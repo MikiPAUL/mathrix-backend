@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,6 +5,50 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int         @id @default(autoincrement())
+  name        String
+  userName    String      @unique
+  phoneNumber String      @unique
+  password    String
+  email       String      @unique
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  role        UserRole    @default(Participant)
+  Event       Event[]
+  EventUser   EventUser[]
+}
+
+model Event {
+  id           Int         @id @default(autoincrement())
+  title        String
+  description  String
+  eventTiming  DateTime
+  location     String
+  prize        Int?
+  posterUrl    String?
+  deleted      Boolean     @default(false)
+  otherDetails Json?
+  addedBy      Int
+  eventType    EventType   @default(Event)
+  eventMode    EventMode   @default(Offline)
+  eventCreator User        @relation(fields: [addedBy], references: [id])
+  EventUser    EventUser[]
+}
+
+model EventUser {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  eventId   Int
+  type      UserRole @default(Participant)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Event     Event    @relation(fields: [eventId], references: [id])
+  User      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, eventId])
 }
 
 enum UserRole {
@@ -23,46 +64,4 @@ enum EventType {
 enum EventMode {
   Online
   Offline
-}
-
-model User {
-  id          Int         @id @default(autoincrement())
-  name        String
-  userName    String      @unique
-  phoneNumber String      @unique
-  password    String
-  email       String      @unique
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  role        UserRole    @default(Participant)
-  EventUser   EventUser[]
-  Event       Event[]
-}
-
-model Event {
-  id           Int         @id @default(autoincrement())
-  title        String
-  description  String
-  eventTiming  DateTime
-  location     String
-  prize        Int?
-  posterUrl    String?
-  deleted      Boolean
-  otherDetails Json?
-  addedBy      Int
-  eventCreator User        @relation(fields: [addedBy], references: [id])
-  eventType    EventType   @default(Event)
-  eventMode    EventMode   @default(Offline)
-  EventUser    EventUser[]
-}
-
-model EventUser {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  eventId   Int
-  type      UserRole @default(Participant)
-  User      User     @relation(fields: [userId], references: [id])
-  Event     Event    @relation(fields: [eventId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }

@@ -1,26 +1,41 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
-/* eslint-disable @typescript-eslint/naming-convention */
-/* eslint-disable @typescript-eslint/space-before-function-paren */
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-/* eslint-disable @typescript-eslint/promise-function-async */
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-var-requires */
+import prisma from '../model/user'
+import passport from 'passport'
+import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt'
+import { Strategy as LocalStrategy } from 'passport-local'
 
-import { PrismaClient } from '@prisma/client'
-const prisma = new PrismaClient()
-const passport = require('passport')
-const JwtStrategy = require('passport-jwt').Strategy
-const ExtractJwt = require('passport-jwt').ExtractJwt
+const opts = {
+  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+  secretOrKey: 'mathrix-maths-department-symposium-2024-secret-key'
+}
 
-const opts = { jwtFromRequest: '', secretOrKey: '' }
-opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken()
-opts.secretOrKey = 'mathrix-maths-department-symposium-2024-secret-key'
-
-passport.use(new JwtStrategy(opts, async function (jwt_payload: any, done: any) {
+passport.use('login', new LocalStrategy({
+  usernameField: 'auth[userName]',
+  passwordField: 'auth[password]'
+}, async (userName, password, done) => {
   try {
-    const user = await prisma.user.findUnique({ where: { id: jwt_payload.id } })
+    const user = await prisma.user.find(userName)
+    console.log(userName, password)
+    if (!user) {
+      return done(null, false, { message: 'User not found' });
+    }
+    console.log(user)
+    const validate = await prisma.user.validUser(userName, password)
+    console.log(validate)
+    if (!validate) {
+      return done(null, false, { message: 'Wrong Password' });
+    }
+
+    return done(null, user, { message: 'Logged in Successfully' });
+  } catch (error) {
+    return done(error);
+  }
+}),
+)
+
+passport.use(new JwtStrategy(opts, async (jwtPayload: any, done: any) => {
+  try {
+    console.log(jwtPayload)
+    const user = await prisma.user.findUnique({ where: { id: jwtPayload.userId } })
 
     if (!user) {
       return done(null, false, { message: 'Not authorized' })

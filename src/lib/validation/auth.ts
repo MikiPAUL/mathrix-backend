@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const authParams = z.object({
+const loginParams = z.object({
     auth: z.object({
         userName: z.string(),
         password: z.string()
@@ -8,5 +8,5 @@ const authParams = z.object({
 })
 
 export {
-    authParams
+    loginParams
 };

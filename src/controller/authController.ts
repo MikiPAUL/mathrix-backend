@@ -1,81 +1,54 @@
-/* eslint-disable @typescript-eslint/non-nullable-type-assertion-style */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/no-var-requires */
-/* eslint-disable @typescript-eslint/brace-style */
-/* eslint-disable no-new */
-/* eslint-disable @typescript-eslint/consistent-type-imports */
-import { Request, Response } from 'express'
-import { PrismaClient } from '@prisma/client'
+import { NextFunction, Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
-const prisma = new PrismaClient()
+import { APIError, HttpStatusCode } from '../helper/CustomError'
+import { loginParams } from '../lib/validation/auth'
+import prisma from '../model/user'
+import { handleError } from '../helper/errorHandler'
+import { createUserParams } from '../lib/validation/user'
+import { generateToken, hashPassword } from '../helper/authHelper'
+import { User } from '@prisma/client'
+import { IUser } from 'user'
 
-exports.login = async (req: Request, res: Response) => {
-  try {
-    const { username, password } = req.body
-
-    const user = await prisma.user.findUnique({ where: { userName: username }, select: { id: true, name: true, userName: true, password: true, role: true } })
-
-    if (!user) {
-      return res.status(400).json({
-        message: 'No user found'
-      })
-    }
-    const isPasswordMatched = await bcrypt.compare(password, user.password)
-    console.log(password, isPasswordMatched)
-    if (!isPasswordMatched) {
-      return res.status(400).json({
-        message: 'Password incorrect'
-      })
-    }
-
-    const jwtSecret: string = process.env.JWT_SECRET as string
-    const token = jwt.sign({ id: user?.id, username: user.userName }, jwtSecret, {})
-    return res.status(200).json({
-      message: 'Login succesfull',
-      token,
-      user
-    })
-  }
-  catch (e) {
-    res.status(400).json({ error: 'Something went wrong', e })
+const serializeUser = (user: IUser) => {
+  const { password, ...neededFields } = user
+  return {
+    ...neededFields
   }
 }
 
-exports.register = async (req: Request, res: Response) => {
+const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const username = req.body.username
-    const password = req.body.password
-    const name = req.body.name
-    const email = req.body.email
-    const phoneNumber = req.body.phoneNumber
-
-    const hashedPassword = await bcrypt.hash(password, 14)
-    const user = await prisma.user.create({
-      data: {
-        name,
-        userName: username,
-        password: hashedPassword,
-        email,
-        phoneNumber
-      },
-      select: {
-        id: true,
-        userName: true,
-        email: true,
-        role: true
-      }
-    })
-
-    res.status(200).json({
-      message: 'registered successfully',
-      user
-    })
-  } catch (err) {
-    res.status(400).json({
-      message: 'Something went wrong',
-      err
+    if (!req.user) throw new APIError('Unauthorized', HttpStatusCode.UNAUTHORISED)
+    res.setHeader('Authorization', `Bearer ${generateToken(req.user)}`)
+    return res.status(HttpStatusCode.CREATED).json({
+      user: serializeUser(req.user)
     })
   }
+  catch (e) {
+    next(e)
+  }
+}
+
+const register = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const createUserRequest = createUserParams.safeParse(req.body)
+    if (!createUserRequest.success) throw new APIError('Invalid request body', HttpStatusCode.BAD_REQUEST)
+
+    const { userName, password, email, phoneNumber, name } = createUserRequest.data.user
+    const hashedPassword = await hashPassword(password)
+    console.log(password, hashedPassword)
+    const user = await prisma.user.add({ userName, email, phoneNumber, name, password: hashedPassword })
+
+    res.setHeader('token', generateToken(user))
+    return res.status(HttpStatusCode.CREATED).json({
+      user: serializeUser(user)
+    })
+  } catch (e) {
+    next(e)
+  }
+}
+
+export {
+  login,
+  register
 }
