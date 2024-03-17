@@ -2,7 +2,6 @@ import { NextFunction, Request, Response } from 'express'
 import { eventCreateParams } from '../lib/validation/event'
 import { APIError, HttpStatusCode } from '../helper/CustomError'
 import prisma from '../model/event'
-import { handleError } from '../helper/errorHandler'
 
 const create = async (req: Request, res: Response, next: NextFunction) => {
   try {
