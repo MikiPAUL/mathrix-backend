@@ -1,12 +1,22 @@
-import express from 'express'
+import express, { NextFunction, Request, Response } from 'express'
 import dotenv from 'dotenv'
 import router from './route'
 import passport from 'passport'
 import { UserRole } from '@prisma/client'
+import cors from 'cors'
+
+const app = express()
+
+const corsOptions = {
+  AccessControlAllowOrigin: '*',
+  origin: '*',
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE'
+}
+
+app.use(cors(corsOptions))
 
 require('./helper/passport-config')
 
-const app = express()
 dotenv.config({ path: './config.env' })
 
 declare global {
@@ -25,8 +35,6 @@ declare global {
     }
   }
 }
-
-app.use(cors())
 app.use(passport.initialize())
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
@@ -38,7 +46,4 @@ app.listen(5000, () => {
 })
 
 export default app
-function cors(): any {
-  throw new Error('Function not implemented.')
-}
 

@@ -25,6 +25,7 @@ const create = async (req: Request, res: Response, next: NextFunction) => {
 const index = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const events = await prisma.event.list()
+    res.setHeader("Access-Control-Allow-Origin", "*")
     return res.status(HttpStatusCode.OK).json({ events })
   }
   catch (e) {

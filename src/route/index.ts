@@ -28,6 +28,7 @@ router.post(
 //upload Image 
 router.post(
     '/api/image/upload',
+    passport.authenticate("jwt", { session: false, failWithError: true }),
     checkIsInRole(UserRole.Coordinator),
     uploadImageService.single('image'),
     imageUpload,
