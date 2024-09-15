@@ -37,7 +37,7 @@
 		"bcryptjs": "^2.4.3",
 		"cors": "^2.8.5",
 		"dotenv": "^16.4.1",
-		"express": "^4.17.1",
+		"express": "^4.21.0",
 		"express-flash": "^0.0.2",
 		"express-session": "^1.18.0",
 		"jsonwebtoken": "^9.0.2",
